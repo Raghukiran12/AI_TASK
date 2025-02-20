@@ -28,21 +28,71 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import { Label } from "@/components/ui/label";
 import { apiRequest, queryClient } from "@/lib/queryClient";
-import { getPriorityRecommendation } from "@/lib/openai";
+import { getPriorityRecommendation, getTaskSuggestions } from "@/lib/openai";
 import { Loader2, Plus, MessageCircle, Bell, Edit, Trash } from "lucide-react";
+import { ScrollArea } from "@/components/ui/scroll-area";
+
+type AlertDialogState = {
+  show: boolean;
+  taskId: number | null;
+};
+
+type AIAssistantDialogState = {
+  show: boolean;
+  taskId: number | null;
+  suggestions: string[];
+  steps: string[];
+  estimatedTime: string;
+};
 
 export default function TaskList() {
   const [showNewTaskDialog, setShowNewTaskDialog] = useState(false);
-  const [showAlertDialog, setShowAlertDialog] = useState(false);
+  const [showEditDialog, setShowEditDialog] = useState(false);
+  const [alertDialog, setAlertDialog] = useState<AlertDialogState>({
+    show: false,
+    taskId: null,
+  });
+  const [aiAssistantDialog, setAIAssistantDialog] = useState<AIAssistantDialogState>({
+    show: false,
+    taskId: null,
+    suggestions: [],
+    steps: [],
+    estimatedTime: "",
+  });
   const [selectedTask, setSelectedTask] = useState<Task | null>(null);
+  const [alertType, setAlertType] = useState<"minutes" | "hours" | "days">("minutes");
+  const [alertValue, setAlertValue] = useState<string>("");
 
   const { data: tasks, isLoading } = useQuery<Task[]>({
     queryKey: ["/api/tasks"],
   });
 
   const form = useForm({
+    resolver: zodResolver(insertTaskSchema),
+    defaultValues: {
+      title: "",
+      description: "",
+      status: "todo",
+      priority: "medium",
+      dueDate: null,
+      dueTime: null,
+      alertBefore: null,
+    },
+  });
+
+  const editForm = useForm({
     resolver: zodResolver(insertTaskSchema),
     defaultValues: {
       title: "",
@@ -74,6 +124,8 @@ export default function TaskList() {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/tasks"] });
+      setShowEditDialog(false);
+      setSelectedTask(null);
     },
   });
 
@@ -88,7 +140,6 @@ export default function TaskList() {
 
   const onSubmit = async (data: any) => {
     try {
-      // Format the data before submission
       const formattedData = {
         ...data,
         dueDate: data.dueDate || null,
@@ -101,12 +152,63 @@ export default function TaskList() {
         formattedData.priority = recommendation.priority || formattedData.priority;
       } catch (error) {
         console.error("Failed to get priority recommendation:", error);
-        // Continue with user-selected priority if AI recommendation fails
       }
 
       createTaskMutation.mutate(formattedData);
     } catch (error) {
       console.error("Form submission error:", error);
+    }
+  };
+
+  const onEdit = async (data: any) => {
+    if (!selectedTask) return;
+    try {
+      const formattedData = {
+        ...data,
+        id: selectedTask.id,
+        dueDate: data.dueDate || null,
+        dueTime: data.dueTime || null,
+        alertBefore: data.alertBefore ? parseInt(data.alertBefore) : null,
+      };
+      updateTaskMutation.mutate(formattedData);
+    } catch (error) {
+      console.error("Edit submission error:", error);
+    }
+  };
+
+  const handleSetAlert = () => {
+    if (!alertDialog.taskId || !alertValue) return;
+
+    let minutes = parseInt(alertValue);
+    switch (alertType) {
+      case "hours":
+        minutes *= 60;
+        break;
+      case "days":
+        minutes *= 1440; // 24 * 60
+        break;
+    }
+
+    updateTaskMutation.mutate({
+      id: alertDialog.taskId,
+      alertBefore: minutes,
+    });
+    setAlertDialog({ show: false, taskId: null });
+    setAlertValue("");
+  };
+
+  const handleGetAIAssistance = async (task: Task) => {
+    try {
+      const response = await getTaskSuggestions(
+        `Task: ${task.title}\nDescription: ${task.description || ""}`
+      );
+      setAIAssistantDialog({
+        show: true,
+        taskId: task.id,
+        ...response,
+      });
+    } catch (error) {
+      console.error("Failed to get AI assistance:", error);
     }
   };
 
@@ -119,6 +221,7 @@ export default function TaskList() {
     return {
       total: tasks.length,
       dueToday: tasks.filter(task => {
+        if (!task.dueDate) return false;
         const dueDate = new Date(task.dueDate);
         dueDate.setHours(0, 0, 0, 0);
         return dueDate.getTime() === today.getTime();
@@ -261,6 +364,165 @@ export default function TaskList() {
         </Dialog>
       </div>
 
+      {/* Edit Dialog */}
+      <Dialog open={showEditDialog} onOpenChange={setShowEditDialog}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Edit Task</DialogTitle>
+          </DialogHeader>
+          <form onSubmit={editForm.handleSubmit(onEdit)} className="space-y-4">
+            <div className="space-y-2">
+              <Label htmlFor="edit-title">Title</Label>
+              <Input id="edit-title" {...editForm.register("title")} required />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="edit-description">Description</Label>
+              <Textarea
+                id="edit-description"
+                {...editForm.register("description")}
+                className="min-h-[100px]"
+              />
+            </div>
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label htmlFor="edit-status">Status</Label>
+                <Select 
+                  onValueChange={(value) => editForm.setValue("status", value)}
+                  defaultValue={editForm.getValues("status")}
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="Select status" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {taskStatusEnum.map((status) => (
+                      <SelectItem key={status} value={status}>
+                        {status.charAt(0).toUpperCase() + status.slice(1).replace('_', ' ')}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="edit-priority">Priority</Label>
+                <Select
+                  onValueChange={(value) => editForm.setValue("priority", value)}
+                  defaultValue={editForm.getValues("priority")}
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="Select priority" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {taskPriorityEnum.map((priority) => (
+                      <SelectItem key={priority} value={priority}>
+                        {priority.charAt(0).toUpperCase() + priority.slice(1)}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label htmlFor="edit-dueDate">Due Date</Label>
+                <Input
+                  id="edit-dueDate"
+                  type="date"
+                  {...editForm.register("dueDate")}
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="edit-dueTime">Due Time</Label>
+                <Input
+                  id="edit-dueTime"
+                  type="time"
+                  {...editForm.register("dueTime")}
+                />
+              </div>
+            </div>
+            <Button
+              type="submit"
+              className="w-full"
+              disabled={updateTaskMutation.isPending}
+            >
+              {updateTaskMutation.isPending ? "Updating..." : "Update Task"}
+            </Button>
+          </form>
+        </DialogContent>
+      </Dialog>
+
+      {/* Alert Dialog */}
+      <AlertDialog open={alertDialog.show} onOpenChange={(open) => setAlertDialog({ show: open, taskId: null })}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Set Alert</AlertDialogTitle>
+            <AlertDialogDescription>
+              Choose when you want to be alerted before the task is due.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <div className="grid gap-4 py-4">
+            <div className="grid grid-cols-2 gap-4">
+              <Input
+                type="number"
+                min="1"
+                placeholder="Enter time"
+                value={alertValue}
+                onChange={(e) => setAlertValue(e.target.value)}
+              />
+              <Select onValueChange={(value: any) => setAlertType(value)} defaultValue={alertType}>
+                <SelectTrigger>
+                  <SelectValue placeholder="Select unit" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="minutes">Minutes</SelectItem>
+                  <SelectItem value="hours">Hours</SelectItem>
+                  <SelectItem value="days">Days</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction onClick={handleSetAlert}>Set Alert</AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      {/* AI Assistant Dialog */}
+      <Dialog 
+        open={aiAssistantDialog.show} 
+        onOpenChange={(open) => setAIAssistantDialog(prev => ({ ...prev, show: open }))}
+      >
+        <DialogContent className="sm:max-w-[425px]">
+          <DialogHeader>
+            <DialogTitle>AI Task Assistant</DialogTitle>
+          </DialogHeader>
+          <ScrollArea className="h-[400px] w-full rounded-md border p-4">
+            <div className="space-y-4">
+              <div>
+                <h4 className="font-medium mb-2">Suggestions:</h4>
+                <ul className="list-disc pl-4 space-y-1">
+                  {aiAssistantDialog.suggestions.map((suggestion, index) => (
+                    <li key={index}>{suggestion}</li>
+                  ))}
+                </ul>
+              </div>
+              <div>
+                <h4 className="font-medium mb-2">Steps:</h4>
+                <ol className="list-decimal pl-4 space-y-1">
+                  {aiAssistantDialog.steps.map((step, index) => (
+                    <li key={index}>{step}</li>
+                  ))}
+                </ol>
+              </div>
+              <div>
+                <h4 className="font-medium mb-2">Estimated Time:</h4>
+                <p>{aiAssistantDialog.estimatedTime}</p>
+              </div>
+            </div>
+          </ScrollArea>
+        </DialogContent>
+      </Dialog>
+
       <div className="grid gap-4">
         {tasks?.map((task) => (
           <Card key={task.id}>
@@ -310,8 +572,7 @@ export default function TaskList() {
                     variant="outline"
                     size="icon"
                     onClick={() => {
-                      setSelectedTask(task);
-                      setShowAlertDialog(true);
+                      setAlertDialog({ show: true, taskId: task.id });
                     }}
                   >
                     <Bell className="h-4 w-4" />
@@ -319,9 +580,17 @@ export default function TaskList() {
                   <Button
                     variant="outline"
                     size="icon"
+                    onClick={() => handleGetAIAssistance(task)}
+                  >
+                    <MessageCircle className="h-4 w-4" />
+                  </Button>
+                  <Button
+                    variant="outline"
+                    size="icon"
                     onClick={() => {
                       setSelectedTask(task);
-                      // Open edit dialog
+                      editForm.reset(task);
+                      setShowEditDialog(true);
                     }}
                   >
                     <Edit className="h-4 w-4" />

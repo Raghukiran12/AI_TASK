@@ -13,7 +13,7 @@ export async function getTaskSuggestions(prompt: string) {
       messages: [
         {
           role: "system",
-          content: "You are a helpful task management assistant. Provide task suggestions and breakdowns in JSON format.",
+          content: "You are a helpful task management assistant. Provide task suggestions and breakdowns in JSON format with the following structure: { 'suggestions': string[], 'steps': string[], 'estimatedTime': string }",
         },
         {
           role: "user",
@@ -37,7 +37,7 @@ export async function getPriorityRecommendation(taskDescription: string) {
       messages: [
         {
           role: "system",
-          content: "Analyze the task description and recommend a priority level (1-5) based on urgency and importance. Respond in JSON format.",
+          content: "Analyze the task description and recommend a priority level (low, medium, high) based on urgency and importance. Respond in JSON format with the structure: { 'priority': 'low' | 'medium' | 'high', 'reasoning': string }",
         },
         {
           role: "user",
