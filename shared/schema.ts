@@ -27,15 +27,23 @@ export const insertUserSchema = createInsertSchema(users).pick({
   password: true,
 });
 
-export const insertTaskSchema = createInsertSchema(tasks).pick({
-  title: true,
-  description: true,
-  status: true,
-  priority: true,
-  dueDate: true,
-  dueTime: true,
-  alertBefore: true,
-});
+export const insertTaskSchema = createInsertSchema(tasks)
+  .pick({
+    title: true,
+    description: true,
+    status: true,
+    priority: true,
+    dueDate: true,
+    dueTime: true,
+    alertBefore: true,
+  })
+  .extend({
+    status: z.enum(["todo", "in_progress", "completed"]).default("todo"),
+    priority: z.enum(["low", "medium", "high"]).default("medium"),
+    dueDate: z.string().nullable(),
+    dueTime: z.string().nullable(),
+    alertBefore: z.number().nullable(),
+  });
 
 export type InsertUser = z.infer<typeof insertUserSchema>;
 export type User = typeof users.$inferSelect;

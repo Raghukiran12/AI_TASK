@@ -88,12 +88,25 @@ export default function TaskList() {
 
   const onSubmit = async (data: any) => {
     try {
-      const recommendation = await getPriorityRecommendation(data.description);
-      data.priority = recommendation.priority;
-      createTaskMutation.mutate(data);
+      // Format the data before submission
+      const formattedData = {
+        ...data,
+        dueDate: data.dueDate || null,
+        dueTime: data.dueTime || null,
+        alertBefore: data.alertBefore ? parseInt(data.alertBefore) : null,
+      };
+
+      try {
+        const recommendation = await getPriorityRecommendation(data.description);
+        formattedData.priority = recommendation.priority || formattedData.priority;
+      } catch (error) {
+        console.error("Failed to get priority recommendation:", error);
+        // Continue with user-selected priority if AI recommendation fails
+      }
+
+      createTaskMutation.mutate(formattedData);
     } catch (error) {
-      console.error("Failed to get priority recommendation:", error);
-      createTaskMutation.mutate(data);
+      console.error("Form submission error:", error);
     }
   };
 
