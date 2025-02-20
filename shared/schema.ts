@@ -12,12 +12,10 @@ export const tasks = pgTable("tasks", {
   id: serial("id").primaryKey(),
   title: text("title").notNull(),
   description: text("description"),
-  status: text("status").default("todo").notNull(),
-  priority: text("priority").default("low").notNull(),
+  completed: boolean("completed").default(false),
+  priority: integer("priority").default(1),
   userId: integer("user_id").notNull(),
   dueDate: timestamp("due_date"),
-  alertBefore: integer("alert_before"),
-  alertUnit: text("alert_unit"),
   createdAt: timestamp("created_at").defaultNow(),
 });
 
