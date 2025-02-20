@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { Task, insertTaskSchema, taskStatusEnum, taskPriorityEnum } from "@shared/schema";
 import { useForm } from "react-hook-form";
@@ -43,6 +43,7 @@ import { apiRequest, queryClient } from "@/lib/queryClient";
 import { getPriorityRecommendation, getTaskSuggestions } from "@/lib/openai";
 import { Loader2, Plus, MessageCircle, Bell, Edit, Trash } from "lucide-react";
 import { ScrollArea } from "@/components/ui/scroll-area";
+import { useToast } from "@/hooks/use-toast";
 
 type AlertDialogState = {
   show: boolean;
@@ -58,6 +59,7 @@ type AIAssistantDialogState = {
 };
 
 export default function TaskList() {
+  const { toast } = useToast();
   const [showNewTaskDialog, setShowNewTaskDialog] = useState(false);
   const [showEditDialog, setShowEditDialog] = useState(false);
   const [alertDialog, setAlertDialog] = useState<AlertDialogState>({
@@ -192,10 +194,58 @@ export default function TaskList() {
     updateTaskMutation.mutate({
       id: alertDialog.taskId,
       alertBefore: minutes,
+    }, {
+      onSuccess: () => {
+        toast({
+          title: "Alert set successfully",
+          description: `You will be reminded ${alertValue} ${alertType} before the task is due.`,
+        });
+        setAlertDialog({ show: false, taskId: null });
+        setAlertValue("");
+      }
     });
-    setAlertDialog({ show: false, taskId: null });
-    setAlertValue("");
   };
+
+  const formatAlertTime = (minutes: number) => {
+    if (minutes >= 1440) {
+      const days = Math.floor(minutes / 1440);
+      return `${days} day${days > 1 ? 's' : ''} before`;
+    } else if (minutes >= 60) {
+      const hours = Math.floor(minutes / 60);
+      return `${hours} hour${hours > 1 ? 's' : ''} before`;
+    }
+    return `${minutes} minute${minutes > 1 ? 's' : ''} before`;
+  };
+
+  const checkAndShowReminder = (task: Task) => {
+    if (!task.dueDate || !task.alertBefore) return;
+
+    const dueDate = new Date(task.dueDate);
+    if (task.dueTime) {
+      const [hours, minutes] = task.dueTime.split(':');
+      dueDate.setHours(parseInt(hours), parseInt(minutes));
+    }
+
+    const alertTime = new Date(dueDate.getTime() - task.alertBefore * 60 * 1000);
+    const now = new Date();
+
+    if (Math.abs(alertTime.getTime() - now.getTime()) < 60000) { // Within 1 minute
+      toast({
+        title: "Task Reminder",
+        description: `Reminder: ${task.title} is due ${task.dueTime ? 'at ' + task.dueTime : 'today'}`,
+      });
+    }
+  };
+
+  useEffect(() => {
+    if (!tasks) return;
+
+    const interval = setInterval(() => {
+      tasks.forEach(checkAndShowReminder);
+    }, 60000); // Check every minute
+
+    return () => clearInterval(interval);
+  }, [tasks]);
 
   const handleGetAIAssistance = async (task: Task) => {
     try {
@@ -499,24 +549,24 @@ export default function TaskList() {
           <ScrollArea className="h-[400px] w-full rounded-md border p-4">
             <div className="space-y-4">
               <div>
-                <h4 className="font-medium mb-2">Suggestions:</h4>
-                <ul className="list-disc pl-4 space-y-1">
-                  {aiAssistantDialog.suggestions.map((suggestion, index) => (
-                    <li key={index}>{suggestion}</li>
-                  ))}
-                </ul>
-              </div>
-              <div>
-                <h4 className="font-medium mb-2">Steps:</h4>
-                <ol className="list-decimal pl-4 space-y-1">
+                <h4 className="font-medium mb-2">Task Breakdown:</h4>
+                <ol className="list-decimal pl-4 space-y-2">
                   {aiAssistantDialog.steps.map((step, index) => (
-                    <li key={index}>{step}</li>
+                    <li key={index} className="pl-2">{step}</li>
                   ))}
                 </ol>
               </div>
               <div>
+                <h4 className="font-medium mb-2">Suggestions for Completion:</h4>
+                <ul className="list-disc pl-4 space-y-2">
+                  {aiAssistantDialog.suggestions.map((suggestion, index) => (
+                    <li key={index} className="pl-2">{suggestion}</li>
+                  ))}
+                </ul>
+              </div>
+              <div>
                 <h4 className="font-medium mb-2">Estimated Time:</h4>
-                <p>{aiAssistantDialog.estimatedTime}</p>
+                <p className="text-muted-foreground">{aiAssistantDialog.estimatedTime}</p>
               </div>
             </div>
           </ScrollArea>
@@ -564,6 +614,11 @@ export default function TaskList() {
                       <span className="text-sm px-2 py-1 rounded-full bg-blue-100 text-blue-800">
                         {task.status.charAt(0).toUpperCase() + task.status.slice(1).replace('_', ' ')}
                       </span>
+                      {task.alertBefore && (
+                        <span className="text-sm px-2 py-1 rounded-full bg-purple-100 text-purple-800">
+                          Alert: {formatAlertTime(task.alertBefore)}
+                        </span>
+                      )}
                     </div>
                   </div>
                 </div>

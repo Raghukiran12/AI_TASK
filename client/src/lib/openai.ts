@@ -13,7 +13,13 @@ export async function getTaskSuggestions(prompt: string) {
       messages: [
         {
           role: "system",
-          content: "You are a helpful task management assistant. Provide task suggestions and breakdowns in JSON format with the following structure: { 'suggestions': string[], 'steps': string[], 'estimatedTime': string }",
+          content: `You are a task management expert. Break down the given task into clear, actionable steps and provide helpful suggestions.
+          Respond in JSON format with the following structure:
+          {
+            'steps': string[] (detailed step-by-step breakdown, maximum 5 steps),
+            'suggestions': string[] (practical tips for efficient completion, maximum 3),
+            'estimatedTime': string (realistic time estimate with explanation)
+          }`,
         },
         {
           role: "user",
