@@ -1,0 +1,67 @@
+Backend in Golang (Gin/Fiber)
+Frontend in TypeScript (Next.js + Tailwind CSS)
+AI Utilization (Copilot, ChatGPT, AutoGPT, etc.)
+High Agency & Ownership
+Challenge: AI-Powered Task Management System
+Develop a real-time task management system with:
+● User authentication (JWT-based)
+● Task creation, assignment, and tracking
+● AI-powered task suggestions (OpenAI/Gemini API)
+● Real-time updates (WebSockets)
+● Deployed on cloud platforms (Vercel/Fly.io/Render)
+Tech Requirements:
+Backend (Golang)
+Golang (Gin/Fiber) – REST API development
+JWT authentication for user sessions
+PostgreSQL or MongoDB as the database
+Goroutines & WebSockets for real-time task updates
+AI-powered smart task breakdowns (OpenAI/Gemini API)
+Deployment on Render/Fly.io
+Frontend (TypeScript + Next.js + Tailwind)
+Next.js (App Router preferred) with Tailwind CSS
+Task dashboard with real-time updates
+JWT authentication (client-side handling)
+AI-powered chat for task recommendations
+
+Deployment on Vercel
+Bonus (Go Beyond!)
+Docker & Kubernetes for containerized deployment
+Slack/Discord bot integration
+Automate AI task assignment based on priority
+Leverage AI tools for rapid development
+
+the above is my project my part is only Frontend
+give me working model as per the above given info
+
+make default as home page
+then remaining things like reg, login and above informed content
+take the link reference too
+
+make reg and login page design and other as per the above information
+
+make dummy registration and login in the code
+
+my main motive only on frontend
+
+aslo make crud Operation to for above including all possible design
+
+chat gpt api key:
+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
+
+home page content
+AI-Powered Task Management Reimagined
+Streamline your workflow with intelligent task management. Let AI help you prioritize, organize, and accomplish more.
+
+Get Started
+Learn more →
+Work Smarter
+Everything you need to manage tasks effectively
+
+AI-Powered Insights
+Get intelligent suggestions for task prioritization and smart breakdowns of complex projects.
+
+Real-time Updates
+Stay in sync with your team through instant updates and real-time collaboration features.
+
+Smart Task Management
+Efficiently organize and track tasks with automated priority assignment and progress tracking.
