@@ -121,6 +121,40 @@ export default function TaskList() {
                   className="min-h-[100px]"
                 />
               </div>
+              <div className="space-y-2">
+                <Label htmlFor="status">Status</Label>
+                <select {...form.register("status")} className="w-full p-2 border rounded">
+                  <option value="todo">To Do</option>
+                  <option value="in_progress">In Progress</option>
+                  <option value="completed">Completed</option>
+                </select>
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="priority">Priority</Label>
+                <select {...form.register("priority")} className="w-full p-2 border rounded">
+                  <option value="low">Low</option>
+                  <option value="medium">Medium</option>
+                  <option value="high">High</option>
+                </select>
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="dueDate">Due Date & Time</Label>
+                <Input type="datetime-local" {...form.register("dueDate")} />
+              </div>
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label htmlFor="alertBefore">Alert Before</Label>
+                  <Input type="number" {...form.register("alertBefore")} />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="alertUnit">Alert Unit</Label>
+                  <select {...form.register("alertUnit")} className="w-full p-2 border rounded">
+                    <option value="minutes">Minutes</option>
+                    <option value="hours">Hours</option>
+                    <option value="days">Days</option>
+                  </select>
+                </div>
+              </div>
               <Button
                 type="submit"
                 className="w-full"

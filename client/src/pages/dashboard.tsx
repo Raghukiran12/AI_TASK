@@ -39,6 +39,42 @@ export default function Dashboard() {
       </header>
 
       <main className="container mx-auto px-4 py-8">
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-8">
+          <Card>
+            <CardHeader className="pb-2">
+              <CardTitle className="text-lg">Total Tasks</CardTitle>
+              <CardDescription>{tasks?.length || 0}</CardDescription>
+            </CardHeader>
+          </Card>
+          <Card>
+            <CardHeader className="pb-2">
+              <CardTitle className="text-lg">Due Today</CardTitle>
+              <CardDescription>
+                {tasks?.filter(t => {
+                  const today = new Date();
+                  const dueDate = new Date(t.dueDate);
+                  return dueDate.toDateString() === today.toDateString();
+                }).length || 0}
+              </CardDescription>
+            </CardHeader>
+          </Card>
+          <Card>
+            <CardHeader className="pb-2">
+              <CardTitle className="text-lg">In Progress</CardTitle>
+              <CardDescription>
+                {tasks?.filter(t => t.status === "in_progress").length || 0}
+              </CardDescription>
+            </CardHeader>
+          </Card>
+          <Card>
+            <CardHeader className="pb-2">
+              <CardTitle className="text-lg">Completed</CardTitle>
+              <CardDescription>
+                {tasks?.filter(t => t.status === "completed").length || 0}
+              </CardDescription>
+            </CardHeader>
+          </Card>
+        </div>
         <TaskList />
       </main>
     </div>
