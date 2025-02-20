@@ -1,3 +1,4 @@
+
 import { useState } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { Task, insertTaskSchema } from "@shared/schema";
@@ -6,21 +7,9 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Checkbox } from "@/components/ui/checkbox";
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-  DialogTrigger,
-} from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Label } from "@/components/ui/label";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { getPriorityRecommendation } from "@/lib/openai";
@@ -38,8 +27,11 @@ export default function TaskList() {
     defaultValues: {
       title: "",
       description: "",
-      priority: 1,
+      status: "todo",
+      priority: "low",
       dueDate: null,
+      alertBefore: null,
+      alertUnit: "minutes",
     },
   });
 
@@ -57,7 +49,9 @@ export default function TaskList() {
 
   const toggleTaskMutation = useMutation({
     mutationFn: async ({ id, completed }: { id: number; completed: boolean }) => {
-      const res = await apiRequest("PATCH", `/api/tasks/${id}`, { completed });
+      const res = await apiRequest("PATCH", `/api/tasks/${id}`, { 
+        status: completed ? "completed" : "todo" 
+      });
       return res.json();
     },
     onSuccess: () => {
@@ -121,6 +115,40 @@ export default function TaskList() {
                   className="min-h-[100px]"
                 />
               </div>
+              <div className="space-y-2">
+                <Label htmlFor="status">Status</Label>
+                <select {...form.register("status")} className="w-full p-2 border rounded">
+                  <option value="todo">To Do</option>
+                  <option value="in_progress">In Progress</option>
+                  <option value="completed">Completed</option>
+                </select>
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="priority">Priority</Label>
+                <select {...form.register("priority")} className="w-full p-2 border rounded">
+                  <option value="low">Low</option>
+                  <option value="medium">Medium</option>
+                  <option value="high">High</option>
+                </select>
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="dueDate">Due Date & Time</Label>
+                <Input type="datetime-local" {...form.register("dueDate")} />
+              </div>
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label htmlFor="alertBefore">Alert Before</Label>
+                  <Input type="number" {...form.register("alertBefore")} />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="alertUnit">Alert Unit</Label>
+                  <select {...form.register("alertUnit")} className="w-full p-2 border rounded">
+                    <option value="minutes">Minutes</option>
+                    <option value="hours">Hours</option>
+                    <option value="days">Days</option>
+                  </select>
+                </div>
+              </div>
               <Button
                 type="submit"
                 className="w-full"
@@ -140,7 +168,7 @@ export default function TaskList() {
               <div className="flex items-start justify-between">
                 <div className="flex items-start gap-2">
                   <Checkbox
-                    checked={task.completed}
+                    checked={task.status === "completed"}
                     onCheckedChange={(checked) =>
                       toggleTaskMutation.mutate({
                         id: task.id,
@@ -151,16 +179,26 @@ export default function TaskList() {
                   <div>
                     <CardTitle
                       className={`text-lg ${
-                        task.completed ? "line-through text-muted-foreground" : ""
+                        task.status === "completed" ? "line-through text-muted-foreground" : ""
                       }`}
                     >
                       {task.title}
                     </CardTitle>
-                    {task.description && (
-                      <CardDescription className="mt-1">
-                        {task.description}
-                      </CardDescription>
-                    )}
+                    <CardDescription className="mt-1">
+                      {task.description}
+                    </CardDescription>
+                    <div className="flex gap-2 mt-2 text-sm">
+                      <span className={`px-2 py-1 rounded ${
+                        task.priority === "high" ? "bg-red-100 text-red-700" :
+                        task.priority === "medium" ? "bg-yellow-100 text-yellow-700" :
+                        "bg-green-100 text-green-700"
+                      }`}>
+                        {task.priority}
+                      </span>
+                      <span className="px-2 py-1 rounded bg-blue-100 text-blue-700">
+                        {task.status}
+                      </span>
+                    </div>
                   </div>
                 </div>
                 <Button
