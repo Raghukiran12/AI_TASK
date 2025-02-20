@@ -4,6 +4,7 @@ import { Input } from "@/components/ui/input";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { getTaskSuggestions } from "@/lib/openai";
 import { Loader2, Send } from "lucide-react";
+import { useToast } from "@/hooks/use-toast";
 
 type Message = {
   role: "user" | "assistant";
@@ -11,6 +12,7 @@ type Message = {
 };
 
 export default function AiChat() {
+  const { toast } = useToast();
   const [messages, setMessages] = useState<Message[]>([]);
   const [input, setInput] = useState("");
   const [isLoading, setIsLoading] = useState(false);
@@ -26,18 +28,35 @@ export default function AiChat() {
 
     try {
       const response = await getTaskSuggestions(userMessage);
+
+      // Format the response in a more readable way
+      const formattedContent = [
+        "Task Breakdown:",
+        ...response.steps.map((step: string, i: number) => `${i + 1}. ${step}`),
+        "\nSuggestions:",
+        ...response.suggestions.map((suggestion: string) => `• ${suggestion}`),
+        "\nEstimated Time:",
+        response.estimatedTime
+      ].join('\n');
+
       setMessages((prev) => [
         ...prev,
-        { role: "assistant", content: JSON.stringify(response, null, 2) },
+        { role: "assistant", content: formattedContent },
       ]);
     } catch (error) {
       setMessages((prev) => [
         ...prev,
         {
           role: "assistant",
-          content: "Sorry, I encountered an error. Please try again.",
+          content: "I apologize, but I encountered an error. Please try again in a moment.",
         },
       ]);
+
+      toast({
+        title: "Error",
+        description: "Failed to get AI suggestions. Please try again.",
+        variant: "destructive",
+      });
     } finally {
       setIsLoading(false);
     }
