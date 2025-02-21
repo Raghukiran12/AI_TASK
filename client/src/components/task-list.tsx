@@ -270,17 +270,19 @@ export default function TaskList() {
     today.setHours(0, 0, 0, 0);
 
     const dueToday = tasks.filter(task => {
-      if (!task.dueDate) return false;
+      if (!task.dueDate || task.completed) return false;
       const dueDate = new Date(task.dueDate);
       dueDate.setHours(0, 0, 0, 0);
-      return dueDate.getTime() === today.getTime() && !task.completed;
+      return dueDate.getTime() === today.getTime();
     }).length;
 
     const inProgress = tasks.filter(task => 
       task.status === "in_progress" && !task.completed
     ).length;
 
-    const completed = tasks.filter(task => task.completed).length;
+    const completed = tasks.filter(task => 
+      task.completed || task.status === "completed"
+    ).length;
 
     return {
       total: tasks.length,
