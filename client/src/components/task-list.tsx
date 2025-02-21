@@ -234,6 +234,11 @@ export default function TaskList() {
         title: "Task Reminder",
         description: `Reminder: ${task.title} is due ${task.dueTime ? 'at ' + task.dueTime : 'today'}`,
       });
+      // Remove the alert after showing
+      updateTaskMutation.mutate({
+        id: task.id,
+        alertBefore: null
+      });
     }
   };
 
