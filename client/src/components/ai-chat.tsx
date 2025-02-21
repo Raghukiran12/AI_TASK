@@ -11,9 +11,14 @@ type Message = {
   content: string;
 };
 
-export default function AiChat() {
+export default function AiChat({ taskTitle, taskDescription }: { taskTitle: string, taskDescription: string }) {
   const { toast } = useToast();
-  const [messages, setMessages] = useState<Message[]>([]);
+  const [messages, setMessages] = useState<Message[]>([
+    { 
+      role: "assistant", 
+      content: `How can I help you with your task "${taskTitle}"?` 
+    }
+  ]);
   const [input, setInput] = useState("");
   const [isLoading, setIsLoading] = useState(false);
 
@@ -27,15 +32,17 @@ export default function AiChat() {
     setIsLoading(true);
 
     try {
-      const response = await getTaskSuggestions(userMessage);
+      const response = await getTaskSuggestions(
+        `Task: ${taskTitle}\nDescription: ${taskDescription}\nUser Question: ${userMessage}`
+      );
 
-      // Format the response in a more readable way
       const formattedContent = [
-        "Task Breakdown:",
+        "Here's my analysis:",
+        "\nBreakdown of steps:",
         ...response.steps.map((step: string, i: number) => `${i + 1}. ${step}`),
-        "\nSuggestions:",
+        "\nSuggestions for completion:",
         ...response.suggestions.map((suggestion: string) => `• ${suggestion}`),
-        "\nEstimated Time:",
+        "\nEstimated completion time:",
         response.estimatedTime
       ].join('\n');
 
@@ -44,6 +51,7 @@ export default function AiChat() {
         { role: "assistant", content: formattedContent },
       ]);
     } catch (error) {
+      console.error("AI Assistant error:", error);
       setMessages((prev) => [
         ...prev,
         {
@@ -100,7 +108,7 @@ export default function AiChat() {
         <Input
           value={input}
           onChange={(e) => setInput(e.target.value)}
-          placeholder="Ask for task suggestions..."
+          placeholder="Ask me anything about this task..."
           disabled={isLoading}
         />
         <Button type="submit" size="icon" disabled={isLoading}>

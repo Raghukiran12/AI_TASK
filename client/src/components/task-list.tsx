@@ -44,6 +44,8 @@ import { getPriorityRecommendation, getTaskSuggestions } from "@/lib/openai";
 import { Loader2, Plus, MessageCircle, Bell, Edit, Trash } from "lucide-react";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { useToast } from "@/hooks/use-toast";
+import AiChat from "@/components/ai-chat"; // Fixed import path
+
 
 type AlertDialogState = {
   show: boolean;
@@ -218,13 +220,11 @@ export default function TaskList() {
   };
 
   const checkAndShowReminder = (task: Task) => {
-    if (!task.dueDate || !task.alertBefore) return;
+    if (!task.dueDate || !task.alertBefore || !task.dueTime) return;
 
     const dueDate = new Date(task.dueDate);
-    if (task.dueTime) {
-      const [hours, minutes] = task.dueTime.split(':');
-      dueDate.setHours(parseInt(hours), parseInt(minutes));
-    }
+    const [hours, minutes] = task.dueTime.toString().split(':');
+    dueDate.setHours(parseInt(hours), parseInt(minutes));
 
     const alertTime = new Date(dueDate.getTime() - task.alertBefore * 60 * 1000);
     const now = new Date();
@@ -252,6 +252,7 @@ export default function TaskList() {
       const response = await getTaskSuggestions(
         `Task: ${task.title}\nDescription: ${task.description || ""}`
       );
+      setSelectedTask(task); 
       setAIAssistantDialog({
         show: true,
         taskId: task.id,
@@ -268,16 +269,21 @@ export default function TaskList() {
     const today = new Date();
     today.setHours(0, 0, 0, 0);
 
+    const dueToday = tasks.filter(task => {
+      if (!task.dueDate) return false;
+      const dueDate = new Date(task.dueDate);
+      dueDate.setHours(0, 0, 0, 0);
+      return dueDate.getTime() === today.getTime();
+    }).length;
+
+    const inProgress = tasks.filter(task => task.status === "in_progress").length;
+    const completed = tasks.filter(task => task.completed).length;
+
     return {
       total: tasks.length,
-      dueToday: tasks.filter(task => {
-        if (!task.dueDate) return false;
-        const dueDate = new Date(task.dueDate);
-        dueDate.setHours(0, 0, 0, 0);
-        return dueDate.getTime() === today.getTime();
-      }).length,
-      inProgress: tasks.filter(task => task.status === "in_progress").length,
-      completed: tasks.filter(task => task.completed).length,
+      dueToday,
+      inProgress,
+      completed
     };
   };
 
@@ -349,7 +355,7 @@ export default function TaskList() {
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-2">
                   <Label htmlFor="status">Status</Label>
-                  <Select 
+                  <Select
                     onValueChange={(value) => form.setValue("status", value)}
                     defaultValue={form.getValues("status")}
                   >
@@ -436,7 +442,7 @@ export default function TaskList() {
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">
                 <Label htmlFor="edit-status">Status</Label>
-                <Select 
+                <Select
                   onValueChange={(value) => editForm.setValue("status", value)}
                   defaultValue={editForm.getValues("status")}
                 >
@@ -538,38 +544,20 @@ export default function TaskList() {
       </AlertDialog>
 
       {/* AI Assistant Dialog */}
-      <Dialog 
-        open={aiAssistantDialog.show} 
+      <Dialog
+        open={aiAssistantDialog.show}
         onOpenChange={(open) => setAIAssistantDialog(prev => ({ ...prev, show: open }))}
       >
         <DialogContent className="sm:max-w-[425px]">
           <DialogHeader>
             <DialogTitle>AI Task Assistant</DialogTitle>
           </DialogHeader>
-          <ScrollArea className="h-[400px] w-full rounded-md border p-4">
-            <div className="space-y-4">
-              <div>
-                <h4 className="font-medium mb-2">Task Breakdown:</h4>
-                <ol className="list-decimal pl-4 space-y-2">
-                  {aiAssistantDialog.steps.map((step, index) => (
-                    <li key={index} className="pl-2">{step}</li>
-                  ))}
-                </ol>
-              </div>
-              <div>
-                <h4 className="font-medium mb-2">Suggestions for Completion:</h4>
-                <ul className="list-disc pl-4 space-y-2">
-                  {aiAssistantDialog.suggestions.map((suggestion, index) => (
-                    <li key={index} className="pl-2">{suggestion}</li>
-                  ))}
-                </ul>
-              </div>
-              <div>
-                <h4 className="font-medium mb-2">Estimated Time:</h4>
-                <p className="text-muted-foreground">{aiAssistantDialog.estimatedTime}</p>
-              </div>
-            </div>
-          </ScrollArea>
+          {selectedTask && (
+            <AiChat
+              taskTitle={selectedTask.title}
+              taskDescription={selectedTask.description || ""}
+            />
+          )}
         </DialogContent>
       </Dialog>
 
@@ -603,8 +591,8 @@ export default function TaskList() {
                     )}
                     <div className="flex gap-2 mt-2">
                       <span className={`text-sm px-2 py-1 rounded-full ${
-                        task.priority === "high" 
-                          ? "bg-red-100 text-red-800" 
+                        task.priority === "high"
+                          ? "bg-red-100 text-red-800"
                           : task.priority === "medium"
                           ? "bg-yellow-100 text-yellow-800"
                           : "bg-green-100 text-green-800"
@@ -635,7 +623,14 @@ export default function TaskList() {
                   <Button
                     variant="outline"
                     size="icon"
-                    onClick={() => handleGetAIAssistance(task)}
+                    onClick={() => {
+                      setSelectedTask(task);
+                      setAIAssistantDialog(prev => ({
+                        ...prev,
+                        show: true,
+                        taskId: task.id
+                      }));
+                    }}
                   >
                     <MessageCircle className="h-4 w-4" />
                   </Button>
@@ -644,7 +639,15 @@ export default function TaskList() {
                     size="icon"
                     onClick={() => {
                       setSelectedTask(task);
-                      editForm.reset(task);
+                      editForm.reset({
+                        title: task.title,
+                        description: task.description || "",
+                        status: task.status,
+                        priority: task.priority,
+                        dueDate: task.dueDate ? new Date(task.dueDate).toISOString().split('T')[0] : null,
+                        dueTime: task.dueTime || null,
+                        alertBefore: task.alertBefore || null,
+                      });
                       setShowEditDialog(true);
                     }}
                   >
