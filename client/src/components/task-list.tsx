@@ -41,7 +41,7 @@ import {
 import { Label } from "@/components/ui/label";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { getPriorityRecommendation, getTaskSuggestions } from "@/lib/openai";
-import { Loader2, Plus, MessageCircle, Bell, Edit, Trash } from "lucide-react";
+import { Loader2, Plus, MessageCircle, Bell, Edit, Trash, ListChecks, Clock, Timer, CheckCircle } from "lucide-react";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { useToast } from "@/hooks/use-toast";
 import AiChat from "@/components/ai-chat"; // Fixed import path
@@ -307,25 +307,37 @@ export default function TaskList() {
       <div className="grid grid-cols-4 gap-4 mb-8">
         <Card>
           <CardHeader className="pb-2">
-            <CardTitle className="text-sm font-medium">Total Tasks</CardTitle>
+            <div className="flex items-center justify-between">
+              <CardTitle className="text-sm font-medium">Total Tasks</CardTitle>
+              <ListChecks className="h-5 w-5 text-gray-600" />
+            </div>
             <CardDescription className="text-2xl font-bold">{stats.total}</CardDescription>
           </CardHeader>
         </Card>
         <Card>
           <CardHeader className="pb-2">
-            <CardTitle className="text-sm font-medium">Due Today</CardTitle>
+            <div className="flex items-center justify-between">
+              <CardTitle className="text-sm font-medium">Due Today</CardTitle>
+              <Clock className="h-5 w-5 text-yellow-600" />
+            </div>
             <CardDescription className="text-2xl font-bold text-yellow-600">{stats.dueToday}</CardDescription>
           </CardHeader>
         </Card>
         <Card>
           <CardHeader className="pb-2">
-            <CardTitle className="text-sm font-medium">In Progress</CardTitle>
+            <div className="flex items-center justify-between">
+              <CardTitle className="text-sm font-medium">In Progress</CardTitle>
+              <Timer className="h-5 w-5 text-blue-600" />
+            </div>
             <CardDescription className="text-2xl font-bold text-blue-600">{stats.inProgress}</CardDescription>
           </CardHeader>
         </Card>
         <Card>
           <CardHeader className="pb-2">
-            <CardTitle className="text-sm font-medium">Completed</CardTitle>
+            <div className="flex items-center justify-between">
+              <CardTitle className="text-sm font-medium">Completed</CardTitle>
+              <CheckCircle className="h-5 w-5 text-green-600" />
+            </div>
             <CardDescription className="text-2xl font-bold text-green-600">{stats.completed}</CardDescription>
           </CardHeader>
         </Card>
