@@ -6,10 +6,30 @@ import { Button } from "@/components/ui/button";
 import { useAuth } from "@/hooks/use-auth";
 import { MessageSquare } from "lucide-react";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { apiRequest } from "@/utils/api";
+import { toast } from "@/components/ui/use-toast";
+import { useRouter } from "next/navigation";
 
 export default function Dashboard() {
   const { user, logoutMutation } = useAuth();
   const [showAiChat, setShowAiChat] = useState(false);
+  const queryClient = useQueryClient();
+  const router = useRouter();
+
+
+  const logoutMutation = useMutation({
+    mutationFn: async () => {
+      await apiRequest("POST", "/api/logout");
+      queryClient.clear();
+      toast({
+        title: "Success",
+        description: "Logged out successfully",
+        variant: "default",
+      });
+      router.push("/");
+    },
+  });
 
   return (
     <div className="min-h-screen bg-background">
