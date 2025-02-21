@@ -125,19 +125,7 @@ export default function TaskList() {
       queryClient.invalidateQueries({ queryKey: ["/api/tasks"] });
       setShowNewTaskDialog(false);
       form.reset();
-      toast({
-        title: "Success",
-        description: "Task created successfully",
-        variant: "default",
-      });
     },
-    onError: () => {
-      toast({
-        title: "Error",
-        description: "Failed to create task. Please try again.",
-        variant: "destructive",
-      });
-    }
   });
 
   const updateTaskMutation = useMutation({
