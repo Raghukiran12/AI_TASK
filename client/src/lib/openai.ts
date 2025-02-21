@@ -13,7 +13,7 @@ if (!import.meta.env.VITE_OPENAI_API_KEY) {
 export async function getTaskSuggestions(prompt: string) {
   try {
     const response = await openai.chat.completions.create({
-      model: "gpt-4",
+      model: "gpt-3.5-turbo",
       messages: [
         {
           role: "system",
@@ -43,7 +43,7 @@ export async function getTaskSuggestions(prompt: string) {
 export async function getPriorityRecommendation(taskDescription: string) {
   try {
     const response = await openai.chat.completions.create({
-      model: "gpt-4",
+      model: "gpt-3.5-turbo",
       messages: [
         {
           role: "system",
