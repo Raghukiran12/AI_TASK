@@ -394,7 +394,12 @@ export default function TaskList() {
       </div>
 
       <div className="flex justify-between items-center mb-6">
-        <h2 className="text-2xl font-semibold">My Tasks</h2>
+        <div className="flex items-center gap-4">
+          <h2 className="text-2xl font-semibold">My Tasks</h2>
+          <Button onClick={() => setShowHistory(!showHistory)} variant="outline">
+            {showHistory ? "Current Tasks" : "Task History"}
+          </Button>
+        </div>
         <Dialog open={showNewTaskDialog} onOpenChange={setShowNewTaskDialog}>
           <DialogTrigger asChild>
             <Button>
@@ -628,11 +633,7 @@ export default function TaskList() {
         </DialogContent>
       </Dialog>
 
-      <div className="flex justify-end mb-4">
-        <Button onClick={() => setShowHistory(!showHistory)}>
-          {showHistory ? "Current Tasks" : "Task History"}
-        </Button>
-      </div>
+      
 
       <div className="grid gap-4">
         {(showHistory ? historyTasks : currentTasks)?.map((task) => (
