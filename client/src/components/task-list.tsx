@@ -79,8 +79,15 @@ export default function TaskList() {
   const [alertType, setAlertType] = useState<"minutes" | "hours" | "days">("minutes");
   const [alertValue, setAlertValue] = useState<string>("");
 
-  const { data: tasks, isLoading } = useQuery<Task[]>({
+  const { data: tasks, isLoading, error } = useQuery<Task[]>({
     queryKey: ["/api/tasks"],
+    onError: (error) => {
+      toast({
+        title: "Error",
+        description: "You must be logged in to view tasks",
+        variant: "destructive",
+      });
+    }
   });
 
   const form = useForm({
