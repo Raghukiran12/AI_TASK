@@ -30,7 +30,6 @@ export default function AuthPage() {
   const registerForm = useForm({
     resolver: zodResolver(insertUserSchema),
     defaultValues: {
-      email: "",
       username: "",
       password: "",
     },
@@ -109,14 +108,6 @@ export default function AuthPage() {
                   className="space-y-4"
                 >
                   <div className="space-y-2">
-                    <Label htmlFor="reg-email">Email</Label>
-                    <Input
-                      id="reg-email"
-                      {...registerForm.register("email")}
-                      required
-                    />
-                  </div>
-                  <div className="space-y-2">
                     <Label htmlFor="reg-username">Username</Label>
                     <Input
                       id="reg-username"
@@ -130,15 +121,6 @@ export default function AuthPage() {
                       id="reg-password"
                       type="password"
                       {...registerForm.register("password")}
-                      required
-                    />
-                  </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="reg-confirm-password">Confirm Password</Label>
-                    <Input
-                      id="reg-confirm-password"
-                      type="password"
-                      {...registerForm.register("confirmPassword")}
                       required
                     />
                   </div>

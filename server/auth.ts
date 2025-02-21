@@ -31,15 +31,9 @@ async function comparePasswords(supplied: string, stored: string) {
 export function setupAuth(app: Express) {
   const sessionSettings: session.SessionOptions = {
     secret: process.env.SESSION_SECRET!,
-    resave: true,
-    saveUninitialized: true,
+    resave: false,
+    saveUninitialized: false,
     store: storage.sessionStore,
-    cookie: {
-      secure: false,
-      maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
-      httpOnly: true,
-      sameSite: 'lax'
-    }
   };
 
   app.set("trust proxy", 1);
@@ -65,18 +59,9 @@ export function setupAuth(app: Express) {
   });
 
   app.post("/api/register", async (req, res, next) => {
-    if (!req.body.email || !req.body.username || !req.body.password) {
-      return res.status(400).json({ error: "All fields are required" });
-    }
-
     const existingUser = await storage.getUserByUsername(req.body.username);
     if (existingUser) {
-      return res.status(400).json({ error: "Username already exists" });
-    }
-
-    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    if (!emailRegex.test(req.body.email)) {
-      return res.status(400).json({ error: "Invalid email format" });
+      return res.status(400).send("Username already exists");
     }
 
     const user = await storage.createUser({
@@ -86,7 +71,7 @@ export function setupAuth(app: Express) {
 
     req.login(user, (err) => {
       if (err) return next(err);
-      res.status(201).json({ user, message: "Registration successful" });
+      res.status(201).json(user);
     });
   });
 
