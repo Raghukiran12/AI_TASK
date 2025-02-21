@@ -23,10 +23,22 @@ export const tasks = pgTable("tasks", {
   createdAt: timestamp("created_at").defaultNow(),
 });
 
-export const insertUserSchema = createInsertSchema(users).pick({
-  username: true,
-  password: true,
-});
+export const insertUserSchema = createInsertSchema(users)
+  .pick({
+    username: true,
+    email: true,
+    password: true,
+  })
+  .extend({
+    confirmPassword: z.string()
+      .min(1, "Password confirmation is required"),
+    password: z.string()
+      .min(1, "Password is required"),
+  })
+  .refine((data) => data.password === data.confirmPassword, {
+    message: "Passwords don't match",
+    path: ["confirmPassword"],
+  });
 
 export const insertTaskSchema = createInsertSchema(tasks)
   .pick({
