@@ -1,9 +1,14 @@
 import OpenAI from "openai";
 
 const openai = new OpenAI({ 
-  apiKey: import.meta.env.VITE_OPENAI_API_KEY,
+  apiKey: import.meta.env.VITE_OPENAI_API_KEY || '',
   dangerouslyAllowBrowser: true // Enable browser usage
 });
+
+// Validate API key
+if (!import.meta.env.VITE_OPENAI_API_KEY) {
+  console.error('OpenAI API key is not set. Please add VITE_OPENAI_API_KEY to your environment variables.');
+}
 
 export async function getTaskSuggestions(prompt: string) {
   try {
