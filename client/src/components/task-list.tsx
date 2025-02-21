@@ -63,6 +63,9 @@ type AIAssistantDialogState = {
 export default function TaskList() {
   const { toast } = useToast();
   const [showNewTaskDialog, setShowNewTaskDialog] = useState(false);
+  const [showHistory, setShowHistory] = useState(false);
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
   const [showEditDialog, setShowEditDialog] = useState(false);
   const [alertDialog, setAlertDialog] = useState<AlertDialogState>({
     show: false,
@@ -125,8 +128,43 @@ export default function TaskList() {
       queryClient.invalidateQueries({ queryKey: ["/api/tasks"] });
       setShowNewTaskDialog(false);
       form.reset();
+      toast({
+        title: "Success",
+        description: "Task created successfully",
+        status: "success",
+        duration: 3000,
+      });
     },
+    onError: () => {
+      toast({
+        title: "Error",
+        description: "Failed to create task. Please fill all required fields.",
+        status: "error",
+        duration: 3000,
+      });
+    }
   });
+
+  const filterTasks = (tasks: Task[] | undefined) => {
+    if (!tasks) return { currentTasks: [], historyTasks: [] };
+    
+    return {
+      currentTasks: tasks.filter(task => {
+        if (!task.dueDate) return true;
+        const dueDate = new Date(task.dueDate);
+        dueDate.setHours(0, 0, 0, 0);
+        return dueDate >= today;
+      }),
+      historyTasks: tasks.filter(task => {
+        if (!task.dueDate) return false;
+        const dueDate = new Date(task.dueDate);
+        dueDate.setHours(0, 0, 0, 0);
+        return dueDate < today;
+      })
+    };
+  };
+
+  const { currentTasks, historyTasks } = filterTasks(tasks);
 
   const updateTaskMutation = useMutation({
     mutationFn: async ({ id, ...data }: { id: number } & Partial<Task>) => {
@@ -590,8 +628,14 @@ export default function TaskList() {
         </DialogContent>
       </Dialog>
 
+      <div className="flex justify-end mb-4">
+        <Button onClick={() => setShowHistory(!showHistory)}>
+          {showHistory ? "Current Tasks" : "Task History"}
+        </Button>
+      </div>
+
       <div className="grid gap-4">
-        {tasks?.map((task) => (
+        {(showHistory ? historyTasks : currentTasks)?.map((task) => (
           <Card key={task.id}>
             <CardHeader className="py-4">
               <div className="flex items-start justify-between">

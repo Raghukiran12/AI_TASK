@@ -59,9 +59,18 @@ export function setupAuth(app: Express) {
   });
 
   app.post("/api/register", async (req, res, next) => {
+    if (!req.body.email || !req.body.username || !req.body.password) {
+      return res.status(400).json({ error: "All fields are required" });
+    }
+
     const existingUser = await storage.getUserByUsername(req.body.username);
     if (existingUser) {
-      return res.status(400).send("Username already exists");
+      return res.status(400).json({ error: "Username already exists" });
+    }
+
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(req.body.email)) {
+      return res.status(400).json({ error: "Invalid email format" });
     }
 
     const user = await storage.createUser({
@@ -71,7 +80,7 @@ export function setupAuth(app: Express) {
 
     req.login(user, (err) => {
       if (err) return next(err);
-      res.status(201).json(user);
+      res.status(201).json({ user, message: "Registration successful" });
     });
   });
 
