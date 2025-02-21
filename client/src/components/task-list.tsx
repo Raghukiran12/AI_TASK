@@ -273,10 +273,13 @@ export default function TaskList() {
       if (!task.dueDate) return false;
       const dueDate = new Date(task.dueDate);
       dueDate.setHours(0, 0, 0, 0);
-      return dueDate.getTime() === today.getTime();
+      return dueDate.getTime() === today.getTime() && !task.completed;
     }).length;
 
-    const inProgress = tasks.filter(task => task.status === "in_progress").length;
+    const inProgress = tasks.filter(task => 
+      task.status === "in_progress" && !task.completed
+    ).length;
+
     const completed = tasks.filter(task => task.completed).length;
 
     return {
@@ -309,19 +312,19 @@ export default function TaskList() {
         <Card>
           <CardHeader className="pb-2">
             <CardTitle className="text-sm font-medium">Due Today</CardTitle>
-            <CardDescription className="text-2xl font-bold">{stats.dueToday}</CardDescription>
+            <CardDescription className="text-2xl font-bold text-yellow-600">{stats.dueToday}</CardDescription>
           </CardHeader>
         </Card>
         <Card>
           <CardHeader className="pb-2">
             <CardTitle className="text-sm font-medium">In Progress</CardTitle>
-            <CardDescription className="text-2xl font-bold">{stats.inProgress}</CardDescription>
+            <CardDescription className="text-2xl font-bold text-blue-600">{stats.inProgress}</CardDescription>
           </CardHeader>
         </Card>
         <Card>
           <CardHeader className="pb-2">
             <CardTitle className="text-sm font-medium">Completed</CardTitle>
-            <CardDescription className="text-2xl font-bold">{stats.completed}</CardDescription>
+            <CardDescription className="text-2xl font-bold text-green-600">{stats.completed}</CardDescription>
           </CardHeader>
         </Card>
       </div>
